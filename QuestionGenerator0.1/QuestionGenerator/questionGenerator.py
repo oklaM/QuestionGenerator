@@ -4,7 +4,7 @@ import os
 import random
 
 DEBUG = False
-API = 'http://192.168.3.156:32033'
+# API = 'http://192.168.3.156:32033'
 
 class Question:
     def __init__(self, question_id, question_title, question_entity, question_type,
@@ -43,12 +43,6 @@ class QuestionGenerator:
         模块的时候传入
         '''
         self.variable_to_entity_dict = variable_to_entity_dict
-        self.variable_to_entity_dict['自主输入'] = '自主输入'
-        self.variable_to_entity_dict['文件上传'] = '文件上传'
-        self.variable_to_entity_dict['部位选择'] = '部位选择'
-        self.entity_to_variable_dict = {}
-        for k, v in variable_to_entity_dict.items():
-            self.entity_to_variable_dict[v] = k
         self.questionsMapList = {}
         basepath = os.path.abspath(__file__)
         folder = os.path.dirname(basepath)
@@ -69,22 +63,18 @@ class QuestionGenerator:
         获得s在KB中的类型
         :param s:变量对应的名称
         '''
-        # if DEBUG:
-        #     print('QuestionGenerator._get_type', self._post_downwardRecursion({'entity':s})['type'])
-        s_r_o = self._post_downwardRecursion({'entity':s})
-        return s_r_o['type'] if 'type' in s_r_o else None
-
-    def _post_downwardRecursion(self, body:dict) -> dict:
-        '''
-        发送报文获得三元组
-        :param body:dict类型，报文的body
-        :return 返回response.text的dict
-        '''
-        url = API + '/downwardRecursion'
-        response = requests.post(url, data = json.dumps(body))
-        # if DEBUG:
-        #     print('QuestionGenerator._post_downwardRecursion', type(response.text), response)
-        return json.loads(response.text)
+        if s == '咳嗽':
+            return '疾病'
+        elif s == '咽喉红肿':
+            return '部位'
+        elif s == '血红蛋白含量大于80g/ml':
+            return '检查'
+        elif s == '胸闷':
+            return '症状'
+        elif s == '气短':
+            return '症状'
+        else:
+            return None
 
     def generateQuestionsbyLogicVaribales(self, logic_variable_list):
         '''
@@ -107,61 +97,68 @@ class QuestionGenerator:
         # return question_list
         if logic_variable_list is None or len(logic_variable_list) == 0:
             raise AssertionError('logic_variable_list is None or len(logic_variable_list) == 0')
-        
-        entity_list = [''] * len(logic_variable_list)
-        for i in range(len(logic_variable_list)):
-            entity_list[i] = self.variable_to_entity_dict[logic_variable_list[i]]
+            # quit()
 
-        if len(entity_list) == 1:
-            if entity_list[0] == '自主输入':
+        # for i in range(len(logic_variable_list)):
+        #     logic_variable_list[i] = self.variable_to_entity_dict[logic_variable_list[i]]
+
+        if len(logic_variable_list) == 1:
+            if logic_variable_list[0] == '自主输入':
                 q = Question(
                     question_id = self.questionID,
                     question_title = '自主输入测试',
                     question_entity = '自主输入',
                     question_type = 3 #3是自主输入的问题类型编号
                 )
+                if DEBUG:
+                    print(q.__dict__)
                 self.questions[self.questionID] = q
                 self.questionID += 1
                 question_list = []
                 question_list.append(q)
                 return question_list
-            elif entity_list[0] == '文件上传':
+            elif logic_variable_list[0] == '文件上传':
                 q = Question(
                     question_id = self.questionID,
                     question_title = '文件上传测试',
                     question_entity = '文件上传',
                     question_type = 4 #4是文件上传的问题类型编号
                 )
+                if DEBUG:
+                    print(q.__dict__)
                 self.questions[self.questionID] = q
                 self.questionID += 1
                 question_list = []
                 question_list.append(q)
                 return question_list
-            elif entity_list[0] == '部位选择':
+            elif logic_variable_list[0] == '部位选择':
                 q = Question(
                     question_id = self.questionID,
                     question_title = '部位选择测试',
                     question_entity = '部位选择',
-                    question_type = 5 #5是文件上传的问题类型编号
+                    question_type = 5, #5是文件上传的问题类型编号
+                    location = 'G'
                 )
+                if DEBUG:
+                    print(q.__dict__)
                 self.questions[self.questionID] = q
                 self.questionID += 1
                 question_list = []
                 question_list.append(q)
                 return question_list
             else:
-                variable_type = self._get_type(entity_list[0]) 
+                variable_type = self._get_type(logic_variable_list[0]) 
                 if variable_type is None:
-                    raise AssertionError('can not find variable {}\'s type '.format(entity_list[0]))
+                    raise AssertionError('can not find variable {}\'s type '.format(logic_variable_list[0]))
                 if variable_type in ['状态修饰语', '性质修饰语', '程度修饰语', '频率修饰语', '方位修饰语', '数量修饰语',\
-                        '疾病', '症状', '部位', '否定词', '病史', '事件', '颜色', '生物', '时间', '化学物质', '食品', '年龄', '人群分类', '数据', '生理概念', '病理概念']:
+                        '疾病', '症状', '否定词', '病史', '事件', '颜色', '生物', '时间', '化学物质', '食品', '年龄', '人群分类', '数据', '生理概念', '病理概念']:
                     # 主诉 单选题
                     random_num = random.randrange(0, len(self.questionsMapList[variable_type])) #随机选择第几个问题
-                    title = self.questionsMapList[variable_type][random_num].format(entity_list[0])
+                    title = self.questionsMapList[variable_type][random_num].format(logic_variable_list[0])
                     q = Question(
                         question_id = self.questionID,
                         question_title = title, 
-                        question_entity = entity_list[0],
+                        question_entity = logic_variable_list[0],
                         question_type = 1,
                         question_options = [{'num':1,'value':'是'},{'num':2,'value':'否'}]
                     )
@@ -173,15 +170,14 @@ class QuestionGenerator:
                     question_list = []
                     question_list.append(q)
                     return question_list
-                elif variable_type in ['检查'] and entity_list[0] in ['身高', '体重', '血压', '血氧', '体温']:
-                    # 查体题 即 舱内检查
-                    # 舱内检查只有 ['身高', '体重', '血压', '血氧', '体温']
+                elif variable_type in ['部位']:
+                    # 查体题
                     random_num = random.randrange(0, len(self.questionsMapList[variable_type])) #随机选择第几个问题
-                    title = self.questionsMapList[variable_type][random_num].format(entity_list[0])
+                    title = self.questionsMapList[variable_type][random_num].format(logic_variable_list[0])
                     q = Question(
                         question_id = self.questionID,
                         question_title = title,
-                        question_entity = entity_list[0],
+                        question_entity = logic_variable_list[0],
                         question_type = 6,
                         question_options = [{'num':1,'value':'是'},{'num':2,'value':'否'}]
                     )
@@ -194,13 +190,13 @@ class QuestionGenerator:
                     question_list.append(q)
                     return question_list
                 elif variable_type in ['检查']:
-                    # 检查题 即 舱外检查 包含除舱内检查外的检查
+                    # 检查题
                     random_num = random.randrange(0, len(self.questionsMapList[variable_type])) #随机选择第几个问题
-                    title = self.questionsMapList[variable_type][random_num].format(entity_list[0])
+                    title = self.questionsMapList[variable_type][random_num].format(logic_variable_list[0])
                     q = Question(
                         question_id = self.questionID,
                         question_title = title,
-                        question_entity = entity_list[0],
+                        question_entity = logic_variable_list[0],
                         question_type = 7,
                         question_options = [{'num':1,'value':'是'},{'num':2,'value':'否'}]
                     )
@@ -212,15 +208,15 @@ class QuestionGenerator:
                     question_list = []
                     question_list.append(q)
                     return question_list
-        elif len(entity_list) > 1:
+        elif len(logic_variable_list) > 1:
             # 多选题
             title = '请您在下列选项中选择您所出现的症状。'
             q = Question(
                 question_id = self.questionID,
                 question_title = title,
-                question_entity = entity_list,
+                question_entity = logic_variable_list,
                 question_type = 2,
-                question_options = [{'num':i+1,'value':entity_list[i]} for i in range(len(entity_list))]
+                question_options = [{'num':i+1,'value':logic_variable_list[i]} for i in range(len(logic_variable_list))]
             )
             if DEBUG:
                 print(title)
@@ -247,19 +243,15 @@ class QuestionGenerator:
                 options_values = [a.options[i]['value'] for i in range(len(a.options))]
                 for e in entity:
                     if e in options_values:
-                        variable = self.entity_to_variable_dict[e]
-                        variable_value_list.append((variable, 1))
+                        variable_value_list.append((e, 1))
                     else:
-                        variable = self.entity_to_variable_dict[e]
-                        variable_value_list.append((variable, 0))
+                        variable_value_list.append((e, 0))
             else: 
                 #单选题 entity = '发热'
                 if a.options[0]['num'] == 1:
-                    variable = self.entity_to_variable_dict[entity]
-                    variable_value_list.append((variable, 1))
+                    variable_value_list.append((entity, 1))
                 else:
-                    variable = self.entity_to_variable_dict[entity]
-                    variable_value_list.append((variable, 0))
+                    variable_value_list.append((entity, 0))
         # variable_value_list = [('发热',1)]
         if DEBUG:
             print(variable_value_list)
@@ -268,12 +260,25 @@ class QuestionGenerator:
 
 if __name__ == "__main__":
     DEBUG = True
-    questions = QuestionGenerator({'x1':'发热', 'x2':'咳嗽'})
-    questions._post_downwardRecursion({'entity':'发热'})
-    questions._get_type('发热')
-    question_list = questions.generateQuestionsbyLogicVaribales(['x1', 'x2'])
+    questions = QuestionGenerator({})
+    # 咳嗽
+    question_list = questions.generateQuestionsbyLogicVaribales(['咳嗽'])
+    # (咳嗽, 1)
     answer = Answer(question_list[0].id, [question_list[0].options[0]])
     questions.determineValueofLogicVariables([answer])
-    question_list = questions.generateQuestionsbyLogicVaribales(['x2'])
-    answer = Answer(question_list[0].id, [question_list[0].options[0]])
+    # # (咳嗽, 0)
+    # answer = Answer(question_list[0].id, [question_list[0].options[1]])
+    # questions.determineValueofLogicVariables([answer])
+    # 咽喉红肿
+    question_list = questions.generateQuestionsbyLogicVaribales(['咽喉红肿'])
+    # # (咽喉红肿, 1)
+    # answer = Answer(question_list[0].id, [question_list[0].options[0]])
+    # questions.determineValueofLogicVariables([answer])
+    # (咽喉红肿, 0)
+    answer = Answer(question_list[0].id, [question_list[0].options[1]])
     questions.determineValueofLogicVariables([answer])
+    # '胸闷', '气短'
+    question_list = questions.generateQuestionsbyLogicVaribales(['胸闷', '气短'])
+    question_list = questions.generateQuestionsbyLogicVaribales(['自主输入'])
+    question_list = questions.generateQuestionsbyLogicVaribales(['文件上传'])
+    question_list = questions.generateQuestionsbyLogicVaribales(['部位选择'])
